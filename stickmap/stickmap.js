@@ -5,11 +5,11 @@ const DEADZONE = 22;
 // Minimum framerate to maintain while redrawing canvas
 const MINIMUM_FRAMERATE = 255;
 
-const GATE_RADIUS = 103; // Unclamped range
+const GATE_RADIUS = 127; // Unclamped range
 const CLAMP_RADIUS = 80; // Clamped range
 
 // How much to darken clamped coordinates
-const CLAMPED_COLOR_MULT = 1.0 / 3.0;
+const CLAMPED_COLOR_MULT = 2.0 / 3.0;
 
 const GRID_LINE_WIDTH = 1;
 const CANVAS_SCALE = 6;
@@ -815,7 +815,7 @@ function getGateRadius(x, y)
 function isVisibleCoordinate(x, y)
 {
     if (useGate)
-        return x*x + y*y <= getGateRadius(x, y)**2;
+        return true;
     else
         return x*x + y*y <= CLAMP_RADIUS**2;
 }
