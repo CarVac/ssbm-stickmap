@@ -429,8 +429,8 @@ class Region
         this.#element.find("#x-max").change(function() { roundCoord(this); });
         this.#element.find("#y-min").change(function() { roundCoord(this); });
         this.#element.find("#y-max").change(function() { roundCoord(this); });
-        this.#element.find("#magnitude-min").change(function() { roundCoord(this); });
-        this.#element.find("#magnitude-max").change(function() { roundCoord(this); });
+        this.#element.find("#magnitude-min").change(function() { roundMag(this); });
+        this.#element.find("#magnitude-max").change(function() { roundMag(this); });
 
         // Angle input
         this.#element.find("#angle-min").on("input", function() {
@@ -443,11 +443,11 @@ class Region
 
         // Magnitude input
         this.#element.find("#magnitude-min").on("input", function() {
-            region.#changeProperty('magnitudeMin', filterCoord(this));
+            region.#changeProperty('magnitudeMin', filterMag(this));
         });
 
         this.#element.find("#magnitude-max").on("input", function() {
-            region.#changeProperty('magnitudeMax', filterCoord(this));
+            region.#changeProperty('magnitudeMax', filterMag(this));
         });
     }
 
@@ -559,6 +559,7 @@ class Region
     {
         const formatCoord = coord => (coord / CLAMP_RADIUS).toFixed(4);
         const formatAngle = angle => angle.toFixed(2);
+        const formatMag = coord => (coord / parseFloat(CLAMP_RADIUS)).toFixed(4);
 
         this.#element.find("#region-name").val(this.name);
         this.#updateColorSquare();
@@ -572,8 +573,8 @@ class Region
         this.#element.find("#y-max").val(formatCoord(this.maxY));
         this.#element.find("#angle-min").val(formatAngle(this.angleMin));
         this.#element.find("#angle-max").val(formatAngle(this.angleMax));
-        this.#element.find("#magnitude-min").val(formatCoord(this.magnitudeMin));
-        this.#element.find("#magnitude-max").val(formatCoord(this.magnitudeMax));
+        this.#element.find("#magnitude-min").val(formatMag(this.magnitudeMin));
+        this.#element.find("#magnitude-max").val(formatMag(this.magnitudeMax));
     }
 
     #updateColorSquare()
@@ -600,6 +601,15 @@ function roundCoord(elem)
     let selectionStart = elem.selectionStart;
     let selectionEnd = elem.selectionEnd;
     elem.value = (Math.round(parseFloat(elem.value) * CLAMP_RADIUS) / CLAMP_RADIUS).toFixed(4);
+    elem.selectionStart = selectionStart;
+    elem.selectionEnd = selectionEnd;
+}
+
+function roundMag(elem)
+{
+    let selectionStart = elem.selectionStart;
+    let selectionEnd = elem.selectionEnd;
+    elem.value = parseFloat(elem.value).toFixed(4);
     elem.selectionStart = selectionStart;
     elem.selectionEnd = selectionEnd;
 }
@@ -739,6 +749,29 @@ function filterAngle(elem)
         [/(?<=\.\d{2,}).+$/,              ""]);     // Truncate to 2 decimal places
 
     return parseFloat(elem.value);
+}
+
+function filterMag(elem)
+{
+    filterElemValue(elem,
+        [/[^\d.]/g,                       ""],     // Remove invalid characters
+        [/(?<=^\d)(\d)(?<caret>)\./,      ".$1"],  // Automatically type digits after decimal
+        [/(?<=^\d)(?<caret>)\d(?=\.)/,    ""],     // Type over ones digit
+        [/^(\d{0,4}$)/,                   "0.$1"], // Automatically prepend decimal
+        [/(?<=^\d+)(?=\d{4}$)/,           "."],    // Automatically insert decimal
+        [/(?<=\.)\./g,                    ""],     // Remove duplicate decimal points
+        [/^\.\d\./,                       "0."],   // Overwrite ones digit with decimal point
+        [/^(?=\.)/,                       "0"],    // Prepend leading 0
+        [/.+(?=\d\.)/g,                   ""],     // Set new decimal point
+        [/(?<caret>).(?=.*$(?<=\d{5}))/g, ""],     // Replace digit when over 4 decimal places
+        [/(?<caret>)(?=\d*$(?<!\d{4}))/g,  "0"],   // Insert 0 when backspacing
+        [/$(?<!\d{4})/,                   "0000"], // Ensure 4 decimal places
+        [/^[2-9]/,                        "1"],    // Cap ones digit to 1
+        [/(?<=^1(?<caret>).*)[1-9]/g,     "0"],    // Zero out fractional digits when inputting 1.0
+        [/^1(?!\.0+$)/,                   "0"],    // Modulo 1 when setting fractional digits
+        [/(?<=\.\d{4,}).+$/,              ""]);    // Truncate to 4 decimal places
+
+    return parseFloat(elem.value) * CLAMP_RADIUS;
 }
 
 function removeCharAt(string, index)
